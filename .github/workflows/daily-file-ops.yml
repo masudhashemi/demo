@@ -6,24 +6,229 @@ on:
     - cron: '30 3 * * *'
   workflow_dispatch: # Allows manual trigger
 
+permissions:
+  contents: write
+
 jobs:
+  check-and-recreate:
+    runs-on: ubuntu-latest
+    outputs:
+      should_continue: ${{ steps.check_day.outputs.should_continue }}
+    steps:
+      - name: Check if it's day 7
+        id: check_day
+        run: |
+          DAY_OF_WEEK=$(date +%u)
+          if [ "$DAY_OF_WEEK" -eq "7" ]; then
+            echo "should_continue=false" >> $GITHUB_OUTPUT
+            echo "It's day 7 - Repository will be deleted"
+          else
+            echo "should_continue=true" >> $GITHUB_OUTPUT
+            echo "Not day 7 - Continuing with file operations"
+          fi
+
+      - name: Delete repository on day 7
+        if: steps.check_day.outputs.should_continue == 'false'
+        run: |
+          echo "Deleting repository on day 7 (Sunday)"
+          curl -X DELETE \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/${{ github.repository }}
+          echo "Repository deleted. It will be recreated tomorrow."
+
   file-operations:
     runs-on: ubuntu-latest
+    needs: check-and-recreate
+    if: needs.check-and-recreate.outputs.should_continue == 'true'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Create and push file
         run: |
-          # Create a file with current timestamp
-          DATE=$(date +"%Y-%m-%d_%H-%M-%S")
-          FILENAME="daily-file-${DATE}.txt"
-          echo "This file was created on ${DATE}" > ${FILENAME}
-          echo "Automated daily file operation" >> ${FILENAME}
-          
           # Configure git
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
+          
+          # Get current date and timestamp
+          DATE=$(date +"%Y-%m-%d_%H-%M-%S")
+          DAY_NUM=$(date +%d)
+          
+          # Determine file type (30% chance for HTML/CSS/JS, 70% for TXT)
+          RANDOM_NUM=$((RANDOM % 10))
+          
+          if [ $RANDOM_NUM -lt 3 ]; then
+            # Create HTML/CSS/JS files
+            FILE_TYPE=$((RANDOM % 3))
+            
+            if [ $FILE_TYPE -eq 0 ]; then
+              # Create HTML file
+              FILENAME="daily-page-${DATE}.html"
+              cat > ${FILENAME} << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        h1 { color: #667eea; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Daily Automated Page</h1>
+        <p>Created on: DATE_PLACEHOLDER</p>
+        <p>This is an automated HTML file generation.</p>
+    </div>
+</body>
+</html>
+EOF
+              sed -i "s/DATE_PLACEHOLDER/${DATE}/g" ${FILENAME}
+              
+            elif [ $FILE_TYPE -eq 1 ]; then
+              # Create CSS file
+              FILENAME="daily-style-${DATE}.css"
+              cat > ${FILENAME} << 'EOF'
+/* Daily Generated CSS File */
+/* Created: DATE_PLACEHOLDER */
+
+:root {
+    --primary-color: #3498db;
+    --secondary-color: #2ecc71;
+    --text-color: #333;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f4f4;
+    color: var(--text-color);
+    line-height: 1.6;
+    margin: 0;
+    padding: 20px;
+}
+
+.header {
+    background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.content {
+    max-width: 800px;
+    margin: 20px auto;
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+button:hover {
+    background-color: var(--secondary-color);
+    transform: translateY(-2px);
+}
+EOF
+              sed -i "s/DATE_PLACEHOLDER/${DATE}/g" ${FILENAME}
+              
+            else
+              # Create JS file
+              FILENAME="daily-script-${DATE}.js"
+              cat > ${FILENAME} << 'EOF'
+// Daily Generated JavaScript File
+// Created: DATE_PLACEHOLDER
+
+class DailyAutomation {
+    constructor() {
+        this.createdDate = 'DATE_PLACEHOLDER';
+        this.init();
+    }
+
+    init() {
+        console.log(`Daily automation initialized on ${this.createdDate}`);
+        this.displayInfo();
+    }
+
+    displayInfo() {
+        const info = {
+            timestamp: new Date().toISOString(),
+            message: 'This is an automated daily JavaScript file',
+            version: '1.0.0',
+            status: 'active'
+        };
+        
+        console.table(info);
+        return info;
+    }
+
+    generateRandomColor() {
+        const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8'];
+        return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    countdown(seconds) {
+        let remaining = seconds;
+        const timer = setInterval(() => {
+            console.log(`Time remaining: ${remaining}s`);
+            remaining--;
+            if (remaining < 0) {
+                clearInterval(timer);
+                console.log('Countdown complete!');
+            }
+        }, 1000);
+    }
+}
+
+// Initialize the automation
+const automation = new DailyAutomation();
+
+// Export for module usage
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = DailyAutomation;
+}
+EOF
+              sed -i "s/DATE_PLACEHOLDER/${DATE}/g" ${FILENAME}
+            fi
+            
+            echo "Created web file: ${FILENAME}"
+          else
+            # Create TXT file (70% of the time)
+            FILENAME="daily-file-${DATE}.txt"
+            echo "This file was created on ${DATE}" > ${FILENAME}
+            echo "Automated daily file operation" >> ${FILENAME}
+            echo "Day of month: ${DAY_NUM}" >> ${FILENAME}
+            echo "Random content: $(uuidgen)" >> ${FILENAME}
+            echo "Created text file: ${FILENAME}"
+          fi
           
           # Add and commit the file
           git add ${FILENAME}
@@ -34,12 +239,14 @@ jobs:
 
       - name: Delete the file
         run: |
-          # Get the filename we just created
-          FILENAME=$(ls daily-file-*.txt | head -n 1)
+          # Get the filename we just created (any extension)
+          FILENAME=$(git log -1 --pretty=format: --name-only | grep -E '\.(txt|html|css|js)$' | head -n 1)
           
-          # Delete the file
-          git rm ${FILENAME}
-          git commit -m "Delete daily file: ${FILENAME}"
-          git push
-          
-          echo "Deleted: ${FILENAME}"
+          if [ -n "$FILENAME" ]; then
+            git rm ${FILENAME}
+            git commit -m "Delete daily file: ${FILENAME}"
+            git push
+            echo "Deleted: ${FILENAME}"
+          else
+            echo "No file found to delete"
+          fi
