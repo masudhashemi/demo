@@ -1,0 +1,45 @@
+name: Daily File Operations
+
+on:
+  schedule:
+    # Runs at 9:00 AM IST (3:30 AM UTC) every day
+    - cron: '30 3 * * *'
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  file-operations:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create and push file
+        run: |
+          # Create a file with current timestamp
+          DATE=$(date +"%Y-%m-%d_%H-%M-%S")
+          FILENAME="daily-file-${DATE}.txt"
+          echo "This file was created on ${DATE}" > ${FILENAME}
+          echo "Automated daily file operation" >> ${FILENAME}
+          
+          # Configure git
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          
+          # Add and commit the file
+          git add ${FILENAME}
+          git commit -m "Add daily file: ${FILENAME}"
+          git push
+          
+          echo "Created and pushed: ${FILENAME}"
+
+      - name: Delete the file
+        run: |
+          # Get the filename we just created
+          FILENAME=$(ls daily-file-*.txt | head -n 1)
+          
+          # Delete the file
+          git rm ${FILENAME}
+          git commit -m "Delete daily file: ${FILENAME}"
+          git push
+          
+          echo "Deleted: ${FILENAME}"
