@@ -56,11 +56,11 @@ jobs:
           DATE=$(date +"%Y-%m-%d_%H-%M-%S")
           DAY_NUM=$(date +%d)
           
-          # Determine file type (30% chance for HTML/CSS/JS, 70% for TXT)
+          # Determine file type (50% chance for HTML/CSS/JS, 50% for TXT)
           RANDOM_NUM=$((RANDOM % 10))
           
-          if [ $RANDOM_NUM -lt 3 ]; then
-            # Create HTML/CSS/JS files
+          if [ $RANDOM_NUM -lt 5 ]; then
+            # Create HTML/CSS/JS files (50% of the time)
             FILE_TYPE=$((RANDOM % 3))
             
             if [ $FILE_TYPE -eq 0 ]; then
@@ -221,7 +221,7 @@ EOF
             
             echo "Created web file: ${FILENAME}"
           else
-            # Create TXT file (70% of the time)
+            # Create TXT file (50% of the time)
             FILENAME="daily-file-${DATE}.txt"
             echo "This file was created on ${DATE}" > ${FILENAME}
             echo "Automated daily file operation" >> ${FILENAME}
